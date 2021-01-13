@@ -8,57 +8,34 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace Dalamud.Game.ClientState
 {
-    public class PartyList : IReadOnlyCollection<PartyMember>, ICollection, IDisposable
+    public class PartyList : IReadOnlyCollection<PartyMember>, ICollection
     {
         private ClientStateAddressResolver Address { get; }
         private Dalamud dalamud;
 
-        private delegate long PartyListUpdateDelegate(IntPtr structBegin, long param2, char param3);
+        private delegate long PartyListGetDelegate(IntPtr groupManager, bool secondManager);
 
-        private Hook<PartyListUpdateDelegate> partyListUpdateHook;
-        private IntPtr partyListBegin;
-        private bool isReady = false;
+        private Hook<PartyListGetDelegate> partyListGetHook;
+        private IntPtr groupManager;
 
         public PartyList(Dalamud dalamud, ClientStateAddressResolver addressResolver)
         {
             Address = addressResolver;
             this.dalamud = dalamud;
-            //this.partyListUpdateHook = new Hook<PartyListUpdateDelegate>(Address.PartyListUpdate, new PartyListUpdateDelegate(PartyListUpdateDetour), this);
-        }
-
-        public void Enable()
-        {
-            // TODO Fix for 5.3
-            //this.partyListUpdateHook.Enable();
-        }
-
-        public void Dispose()
-        {
-            //if (!this.isReady)
-            //    this.partyListUpdateHook.Dispose();
-            this.isReady = false;
-        }
-
-        private long PartyListUpdateDetour(IntPtr structBegin, long param2, char param3)
-        {
-            var result = this.partyListUpdateHook.Original(structBegin, param2, param3);
-            this.partyListBegin = structBegin + 0xB48;
-            this.partyListUpdateHook.Dispose();
-            this.isReady = true;
-            return result;
+            this.groupManager = addressResolver.GroupManager;
+            Log.Verbose("Group manager address {GroupManager}", Address.GroupManager);
         }
 
         public PartyMember this[int index]
         {
             get {
-                if (!this.isReady)
-                    return null;
                 if (index >= Length)
                     return null;
-                var tblIndex = partyListBegin + index * 24;
+                var tblIndex = groupManager + index * 0x230;
                 var memberStruct = Marshal.PtrToStructure<Structs.PartyMember>(tblIndex);
                 return new PartyMember(this.dalamud.ClientState.Actors, memberStruct);
             }
@@ -83,7 +60,7 @@ namespace Dalamud.Game.ClientState
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public int Length => !this.isReady ? 0 : Marshal.ReadByte(partyListBegin + 0xF0);
+        public int Length => Marshal.ReadByte(groupManager + 0x3D5C);
 
         int IReadOnlyCollection<PartyMember>.Count => Length;
 

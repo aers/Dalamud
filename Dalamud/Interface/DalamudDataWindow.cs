@@ -211,7 +211,7 @@ namespace Dalamud.Interface
                             var partyString = string.Empty;
 
                             if (this.dalamud.ClientState.PartyList.Length == 0) {
-                                ImGui.TextUnformatted("Data not ready.");
+                                ImGui.TextUnformatted("Not in a party.");
                             } else {
 
                                 partyString += $"{this.dalamud.ClientState.PartyList.Count} Members\n";
@@ -224,7 +224,7 @@ namespace Dalamud.Interface
                                     }
 
                                     partyString +=
-                                        $"[{i}] {member.CharacterName} - {member.ObjectKind} - {member.Actor.ActorId}\n";
+                                        $"[{i}] {member.Name} - {member.Actor.ObjectKind} - {member.Actor.ActorId}\n";
                                 }
 
                                 ImGui.TextUnformatted(partyString);

@@ -10,25 +10,26 @@ namespace Dalamud.Game.ClientState.Actors.Types
 {
     public class PartyMember
     {
-        public string CharacterName;
-        public long Unknown;
+        public string Name;
+        public Structs.PartyMember PartyInfo;
         public Actor Actor;
-        public ObjectKind ObjectKind;
 
         public PartyMember(ActorTable table, Structs.PartyMember rawData)
         {
-            CharacterName = Marshal.PtrToStringAnsi(rawData.namePtr);
-            Unknown = rawData.unknown;
+            this.PartyInfo = rawData;
+            unsafe
+            {
+                Name = Marshal.PtrToStringAnsi(new IntPtr(rawData.Name));
+            }
             Actor = null;
             for (var i = 0; i < table.Length; i++)
             {
-                if (table[i] != null && table[i].ActorId == rawData.actorId)
+                if (table[i] != null && table[i].ActorId == rawData.ObjectID)
                 {
                     Actor = table[i];
                     break;
                 }
             }
-            ObjectKind = rawData.objectKind;
         }
     }
 }
